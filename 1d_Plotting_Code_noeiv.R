@@ -184,9 +184,9 @@ dev.off()
 
 
 #### FIGURE 4: ERROR SUMMARIES #####
-load(file = "Output/prior_summ")
-load(file = "Output/post_summ")
-load(file = "Output/like_summ")
+load(file = "Output/prior_summ_noeiv")
+load(file = "Output/post_summ_noeiv")
+load(file = "Output/like_summ_noeiv")
 
 # the dimensions of each of these arrays is [date,summary.stat,year]
 
@@ -197,9 +197,6 @@ models = dimnames(post_summ)[[4]]; n_models = length(models)
 
 true_N = read.table("2b_Total Run_Data.txt", header = T)
 true_N = true_N[true_N$year %in% years,"N"]
-
-d = 1
-m = 1
 
 prior_mpe = mean(calc_errors(prior_summ[,"50%"], true_N)$pe)
 prior_mae = mean(calc_errors(prior_summ[,"50%"], true_N)$ape)
@@ -224,7 +221,7 @@ for (d in 1:n_dates) {
 }
 
 pt.cex = 1.3
-jpeg("Output/Figure4.jpg", h = 5 * ppi, w = 6 * ppi, res = ppi)
+jpeg("Output/Figure4_noeiv.jpg", h = 5 * ppi, w = 6 * ppi, res = ppi)
 par(mfrow = c(2,2), mar = c(0.3,3.1,1,0.5), yaxs = "i", oma = c(4,0,0,0),
     tcl = -0.35, mgp = c(2,0.5,0))
 plot(like_mae[,1], type = "o", pch = 17, ylim = c(0, 0.4), axes = F, ann = F, cex = pt.cex)
@@ -289,9 +286,9 @@ mtext(side = 1, line = 2.5, "Date", outer = T)
 dev.off()
 
 #### FIGURE 5: EACH YEAR ERROR #####
-load(file = "Output/prior_summ")
-load(file = "Output/post_summ")
-load(file = "Output/like_summ")
+load(file = "Output/prior_summ_noeiv")
+load(file = "Output/post_summ_noeiv")
+load(file = "Output/like_summ_noeiv")
 
 # the dimensions of each of these arrays is [date,summary.stat,year]
 
@@ -356,7 +353,7 @@ outer = seq(1, 23, 4)
 legend = 24
 
 ppi = 600
-jpeg("Output/Figure5.jpg", h = 9.3 * ppi, w = 7.2 * ppi, res = ppi)
+jpeg("Output/Figure5_noeiv.jpg", h = 9.3 * ppi, w = 7.2 * ppi, res = ppi)
 par(mfrow = c(6,4), mar = c(0.25,0.25,0.25,0.25),
     oma = c(5,5,1,1), cex.axis = 1.3)
 sapply(1:(n_years+1), function(y) {
@@ -421,4 +418,4 @@ post_fcst = apply(post_coverage[,c("6/10", "6/24", "7/8"),"fcst"], 2, function(x
 
 coverage_out = rbind(prior = rep(prior, 3), like_null, like_fcst, post_null, post_fcst)
 
-write.csv(coverage_out, "Output/coverage_table.csv")
+write.csv(coverage_out, "Output/coverage_table_noeiv.csv")
