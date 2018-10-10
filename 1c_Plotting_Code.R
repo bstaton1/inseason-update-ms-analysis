@@ -29,6 +29,7 @@ out_dir = paste(getwd(), "Output", sep = "/")
 #### FIGURE 1: ABUNDANCE AND FORECAST ERROR TIME SERIES, DISTN OF FORECAST ERRORS ####
 true_N = read.table("2b_Total Run_Data.txt", stringsAsFactors = F, header = T)
 e = log(true_N[1:(nrow(true_N)-1),"N"]) - log(true_N[2:nrow(true_N),"N"])
+mean(e); sd(e)
 
 # years corresponding to true run sizes
 y = true_N$year
@@ -48,8 +49,8 @@ par(mfrow = c(3,1), mar = c(1.5,4,0.5,1), oma = c(1,0,0,0), cex.lab = 1.2)
 
 # (a) run size plot
 plot(N ~ year, data = true_N, type = "o", pch = 16,
-     yaxt = "n", xaxt = "n", ylim = c(90000, 450000), ylab = "Run Size (1,000s)")
-axis(side = 2, at = seq(90000, 450000, 90000), labels = seq(90, 450, 90), las = 2)
+     yaxt = "n", xaxt = "n", ylim = c(80000, 450000), ylab = "Run Size (1,000s)")
+axis(side = 2, at = seq(80000, 400000, 80000), labels = seq(80, 400, 80), las = 2)
 usr = par("usr"); xdiff = diff(usr[1:2]); ydiff = diff(usr[3:4])
 len = ifelse(y %in% long.x, ydiff * 0.05, ydiff * 0.025)
 segments(y, usr[3], y, usr[3] - len, xpd = T)
@@ -74,8 +75,8 @@ hist(e, main = "", col = "grey80", xlim = c(-1, 1), las = 1, ylim = c(0,16), yax
 axis(side = 2, at = seq(0, 16, 4), labels = seq(0, 16, 4), las = 2)
 usr = par("usr"); xdiff = diff(usr[1:2]); ydiff = diff(usr[3:4])
 text(usr[1] + xdiff * 0.05, usr[4] - ydiff * 0.07, "(c)", cex = 1.3, font = 2)
-text(x = usr[2] - xdiff * 0.41, y = usr[4] - ydiff * 0.1, labels = TeX("$\\Mean(\\epsilon_{F,t}) = 0.009$"), pos = 4)
-text(x = usr[2] - xdiff * 0.41, y = usr[4] - ydiff * 0.2, labels = TeX("$\\SD(\\epsilon_{F,t}) = 0.267$"), pos = 4)
+text(x = usr[2] - xdiff * 0.41, y = usr[4] - ydiff * 0.1, labels = TeX("$\\Mean(\\epsilon_{F,t}) = 0.008$"), pos = 4)
+text(x = usr[2] - xdiff * 0.41, y = usr[4] - ydiff * 0.2, labels = TeX("$\\SD(\\epsilon_{F,t}) = 0.279$"), pos = 4)
 box()
 dev.off()
 
