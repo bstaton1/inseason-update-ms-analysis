@@ -128,6 +128,18 @@ sample_likelihood = function(fit, pred_data) {
   exp(pred_log_N + rnorm(n_mc, -0.5 * sigma^2, sigma))
 }
 
+##### FUNCTION TO CALCULATE DIFFERENT TYPES OF ERRORS #####
+calc_errors = function(est, true) {
+  e = est - true
+  ae = abs(e)
+  pe = e/true
+  ape = ae/true
+  mult = est/true
+  list(
+    e = e, ae = ae, pe = pe, ape = ape, mult = mult
+  )
+}
+
 ## ::::::::::::::::::::::::::::::::::: ##
 ## FUNCTIONS TO SAMPLE FROM POSTERIOR  ##
 ## ::::::::::::::::::::::::::::::::::: ##

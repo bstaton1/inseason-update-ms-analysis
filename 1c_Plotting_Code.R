@@ -88,7 +88,7 @@ dates_eval = c("6/10", "6/24", "7/15")
 lets = c("(a)", "(b)", "(c)")
 d = 3
 
-jpeg(paste(out_dir, "FigureX.jpg", sep = "/"), h = 5 * ppi, w = 3 * ppi, res = ppi)
+jpeg(paste(out_dir, "Figure2.jpg", sep = "/"), h = 5 * ppi, w = 3 * ppi, res = ppi)
 par(mfrow = c(3,1), mar = c(0.75,2,1,1), oma = c(2.5,2,0,0), cex.lab = 1.2,
     tcl = -0.35, mgp = c(2,0.5,0), yaxs = "i")
 
@@ -154,7 +154,7 @@ mtext(side = 1, outer = T, "Cumulative CPE", line = 1, cex = 0.8)
 mtext(side = 2, outer = T, "Run Size (1,000s)", line = 0.5, cex = 0.8)
 dev.off()
 
-#### RUN TIMING FIGURE ####
+#### FIGURE 3: RUN TIMING FIGURE ####
 
 rt_ests = read.table("2c_Run Timing_Data.txt", header = T)
 
@@ -165,7 +165,7 @@ rt_ests = rt_ests[rt_ests$year >= 1995,]
 rt_ests$fcst_lwr = rt_ests$fcst_d50 - 1.96 * rt_ests$fcst_se_d50
 rt_ests$fcst_upr = rt_ests$fcst_d50 + 1.96 * rt_ests$fcst_se_d50
 
-jpeg("Output/FigureY.jpg", h = 3 * ppi, w = 3.4 * ppi, res = ppi)
+jpeg("Output/Figure3.jpg", h = 3 * ppi, w = 3.4 * ppi, res = ppi)
 par(mar = c(2,3,0.5, 0.5))
 plot(d50 ~ year, data = rt_ests, type = "o", pch = 16, 
      ylim = range(at.y),
@@ -183,130 +183,112 @@ legend("bottomleft", lty = 1, pch = 16, col = c("black", "grey"),
 dev.off()
 
 
-#### FIGURE 3: ERROR SUMMARIES #####
-load(paste(out_dir, "like.summ1", sep = "/"))  # summary stats of likelihood PDFs with timing forecast included
-load(paste(out_dir, "like.summ2", sep = "/"))  # summary stats of likelihood PDFs without timing forecast
-load(paste(out_dir, "post.summ1", sep = "/"))  # summary stats of posterior PDFs with timing forecast included
-load(paste(out_dir, "post.summ2", sep = "/"))  # summary stats of posterior PDFs without timing forecast
+#### FIGURE 4: ERROR SUMMARIES #####
+load(file = "Output/prior_summ")
+load(file = "Output/post_summ")
+load(file = "Output/like_summ")
 
 # the dimensions of each of these arrays is [date,summary.stat,year]
 
-# extrat the evaluated dates and years
-dates = dimnames(like.summ1)[[1]]; n.dates = length(dates)
-years = as.numeric(dimnames(like.summ1)[[3]]); nyrs = length(years)
+# dimensional stuff
+dates = dimnames(post_summ)[[1]]; n_dates = length(dates)
+years = as.numeric(dimnames(post_summ)[[3]]); n_years = length(years)
+models = dimnames(post_summ)[[4]]; n_models = length(models)
 
-# get the summary stats for the priors each year
-prior.mean = true.N$N[true.N$year %in% (years - 1)]
-true.N = true.N$N[true.N$year %in% years]
-prior.summ = matrix(NA, nyrs, 9)
-for (y in 1:nyrs) {
-  prior_samps = exp(rnorm(1e6, mean = log(prior.mean[y]) - 0.5 * 0.267^2, 0.267))
-  prior.summ[y,] = summ(prior_samps)
+true_N = read.table("2b_Total Run_Data.txt", header = T)
+true_N = true_N[true_N$year %in% years,"N"]
+
+d = 1
+m = 1
+
+prior_mpe = mean(calc_errors(prior_summ[,"50%"], true_N)$pe)
+prior_mae = mean(calc_errors(prior_summ[,"50%"], true_N)$ape)
+prior_sig = sd(log(calc_errors(prior_summ[,"50%"], true_N)$mult))
+prior_cv = mean(prior_summ[,"sd"]/prior_summ[,"mean"])
+like_mae = like_mpe = post_mae = post_mpe = matrix(NA, n_dates, n_models)
+like_sig = post_sig = like_mae
+like_cv = post_cv = like_mae
+
+for (d in 1:n_dates) {
+  for (m in 1:n_models) {
+    like_mae[d,m] = mean(calc_errors(like_summ[d,"50%",,m], true_N)$ape)
+    like_mpe[d,m] = mean(calc_errors(like_summ[d,"50%",,m], true_N)$pe)
+    like_sig[d,m] = sd(log(calc_errors(like_summ[d,"50%",,m], true_N)$mult))
+    post_mae[d,m] = mean(calc_errors(post_summ[d,"50%",,m], true_N)$ape)
+    post_mpe[d,m] = mean(calc_errors(post_summ[d,"50%",,m], true_N)$pe)
+    post_sig[d,m] = sd(log(calc_errors(post_summ[d,"50%",,m], true_N)$mult))
+    
+    post_cv[d,m] = mean(post_summ[d,"sd",,m]/post_summ[d,"mean",,m])
+    like_cv[d,m] = mean(like_summ[d,"sd",,m]/like_summ[d,"mean",,m])
+  }
 }
-dimnames(prior.summ) = list(years, names(summ(rnorm(10))))
-prior.median = prior.summ[,"50%"]
 
-# calculate different summaries of the errors
-# x.method.pdf
-  # x: type of error
-    # e = error (median - truth)
-    # ae = absolute error (abs(median - truth))
-    # pe = percent error (e/truth)
-    # ape = absolute percent error: (ae/truth)
-  # method: type of estimator
-    # f: run size forecast (this is the prior)
-    # 1: with timing forecast
-    # 2: without timing forecast
-  # pdf: which pdf is used in error calculation
-    # 1: likelihood
-    # 2: posterior
-
-# errors
-ef = prior.median - true.N
-e1.1 = apply(like.summ1[,"50%",], 1, function(x) x - true.N)  # method 1 likelihood
-e1.2 = apply(post.summ1[,"50%",], 1, function(x) x - true.N)  # method 1 posterior
-e2.1 = apply(like.summ2[,"50%",], 1, function(x) x - true.N)  # method 2 likelihood
-e2.2 = apply(post.summ2[,"50%",], 1, function(x) x - true.N)  # method 2 posterior
-
-# absolute errors
-aef = abs(ef); ae1.1 = abs(e1.1); ae1.2 = abs(e1.2); ae2.1 = abs(e2.1); ae2.2 = abs(e2.2)
-
-# percent errors
-pef = ef/true.N
-pe1.1 = apply(e1.1, 2, function(x) x/true.N)
-pe1.2 = apply(e1.2, 2, function(x) x/true.N)
-pe2.1 = apply(e2.1, 2, function(x) x/true.N)
-pe2.2 = apply(e2.2, 2, function(x) x/true.N)
-
-# absolute percent errors
-apef = aef/true.N
-ape1.1 = apply(ae1.1, 2, function(x) x/true.N)
-ape1.2 = apply(ae1.2, 2, function(x) x/true.N)
-ape2.1 = apply(ae2.1, 2, function(x) x/true.N)
-ape2.2 = apply(ae2.2, 2, function(x) x/true.N)
-
-# mean percent errors
-mpef = mean(pef)
-mpe1.1 = colMeans(pe1.1)
-mpe1.2 = colMeans(pe1.2)
-mpe2.1 = colMeans(pe2.1)
-mpe2.2 = colMeans(pe2.2)
-
-# mean absolute percent errors
-mapef = mean(apef)
-mape1.1 = colMeans(ape1.1)
-mape1.2 = colMeans(ape1.2)
-mape2.1 = colMeans(ape2.1)
-mape2.2 = colMeans(ape2.2)
-
-# variability of log-scale multiplicative errors
-sigf = sd(log(prior.median/true.N))
-sig1.1 = apply(apply(like.summ1[,"50%",], 1, function(x) log(x/true.N)), 2, sd)
-sig2.1 = apply(apply(like.summ2[,"50%",], 1, function(x) log(x/true.N)), 2, sd)
-sig1.2 = apply(apply(post.summ1[,"50%",], 1, function(x) log(x/true.N)), 2, sd)
-sig2.2 = apply(apply(post.summ2[,"50%",], 1, function(x) log(x/true.N)), 2, sd)
-
-# the coordinates of the x-axis
-lab.days = seq(1, n.dates)
-
-# plot
-jpeg(paste(out_dir, "Figure3.jpg", sep = "/"), h = 4* ppi, w = 8 * ppi, res = ppi)
-
-# (a): MAPE by day, method, and PDF type
-par(mfrow = c(1,3), mar = c(3,3.5,2,0.25), cex.axis = 1.2, oma = c(0,0,0,0.5))
-plot(mape1.1, type = "o", ylim = c(0.1, 0.6), lty = 2, lwd = 2, xaxt = "n", main = "MAPE", pch = 2, las = 1, cex = 1.5, cex.main = 1.5, ylab = "", xlab = "")
-lines(mape1.2, type = "o", lty = 2, lwd = 2, pch = 1, cex = 1.5)
-lines(mape2.1, type = "o", lty = 1, lwd = 2, pch = 17, cex = 1.5)
-lines(mape2.2, type = "o", lty = 1, lwd = 2, pch = 16, cex = 1.5)
-abline(h = mapef, col = "grey", lwd = 2)
-axis(side = 1, at = (1:n.dates)[lab.days], labels = dates[lab.days], las = 1)
-legend("topright", legend = c("Prior", "Likelihood (Hist. Timing)", "Likelihood (Fcst. Timing)", "Posterior (Hist. Timing)", "Posterior (Fcst. Timing)"),
-       lwd = c(2,NA,NA,NA,NA), col = c("grey", "black", "black", "black", "black"),
-       pch = c(NA, 17, 2, 16, 1), cex = 1.2, bty = "n",
-       pt.cex = 1.5)
+pt.cex = 1.3
+jpeg("Output/Figure4.jpg", h = 5 * ppi, w = 6 * ppi, res = ppi)
+par(mfrow = c(2,2), mar = c(0.3,3.1,1,0.5), yaxs = "i", oma = c(4,0,0,0),
+    tcl = -0.35, mgp = c(2,0.5,0))
+plot(like_mae[,1], type = "o", pch = 17, ylim = c(0, 0.4), axes = F, ann = F, cex = pt.cex)
 usr = par("usr"); xdiff = diff(usr[1:2]); ydiff = diff(usr[3:4])
-text(x = usr[1] + xdiff * 0.05, y = usr[4] - ydiff * 0.03, "(a)", font = 2, cex = 1.5)
+text(x = usr[2] + xdiff * 0.02, y = usr[4] - ydiff * 0.05, labels = "(a)", font = 2, pos = 2, cex = 1.1)
+text(x = usr[2] + xdiff * 0.02, y = usr[4] - ydiff * 0.15, labels = "MAE", font = 2, pos = 2, cex = 1.1)
+lines(like_mae[,2], type = "o", pch = 2, lty = 2, cex = pt.cex)
+lines(post_mae[,1], type = "o", pch = 16, cex = pt.cex)
+lines(post_mae[,2], type = "o", pch = 1, lty = 2, cex = pt.cex)
+abline(h = prior_mae, col = "grey")
+axis(side = 1, at = 1:n_dates, labels = rep("", n_dates))
+axis(side = 2, las = 2)
+legend("bottomleft", title = "Likelihood",
+       legend = c("w/ RTF", "w/o RTF"),
+       pch = c(2, 17), lty = c(2,1), bty = "n", cex = 0.8)
+legend("bottom", title = "Posterior",
+       legend = c("w/ RTF", "w/o RTF"),
+       pch = c(1, 16), lty = c(2,1), bty = "n", cex = 0.8)
+legend(x = usr[2] - xdiff * 0.25, y = usr[3] + ydiff * 0.29, legend = "", title = "Prior", bty = "n", lty = 1, col = "grey", cex = 0.8)
+box()
 
-# (b): MPE by day, method, and PDF type
-plot(mpe1.1, type = "o", ylim = c(-0.25, 0.1), lty = 2, lwd = 2, xaxt = "n", main = "MPE", pch = 2, las = 1, cex = 1.5, cex.main = 1.5, ylab = "", xlab = "")
-lines(mpe1.2, type = "o", lty = 2, lwd = 2, pch = 1, cex = 1.5)
-lines(mpe2.1, type = "o", lty = 1, lwd = 2, pch = 17, cex = 1.5)
-lines(mpe2.2, type = "o", lty = 1, lwd = 2, pch = 16, cex = 1.5)
-abline(h = mpef, col = "grey", lwd = 2)
-axis(side = 1, at = (1:n.dates)[lab.days], labels = dates[lab.days], las = 1)
+par(mar = c(0.3,0.5,1,3.1))
+plot(like_mpe[,1], type = "o", pch = 17, ylim = c(-0.1, 0.1), axes = F, ann = F, cex = pt.cex)
 usr = par("usr"); xdiff = diff(usr[1:2]); ydiff = diff(usr[3:4])
-text(x = usr[1] + xdiff * 0.05, y = usr[4] - ydiff * 0.03, "(b)", font = 2, cex = 1.5)
+text(x = usr[2] + xdiff * 0.02, y = usr[4] - ydiff * 0.05, labels = "(b)", font = 2, pos = 2, cex = 1.1)
+text(x = usr[2] + xdiff * 0.02, y = usr[4] - ydiff * 0.15, labels = "MPE", font = 2, pos = 2, cex = 1.1)
+lines(like_mpe[,2], type = "o", pch = 2, lty = 2, cex = pt.cex)
+lines(post_mpe[,1], type = "o", pch = 16, cex = pt.cex)
+lines(post_mpe[,2], type = "o", pch = 1, lty = 2, cex = pt.cex)
+abline(h = prior_mpe, col = "grey")
+axis(side = 1, at = 1:n_dates, labels = rep("", n_dates))
+axis(side = 4, las = 2)
+box()
 
-# (c) variability of errors by day, method, and PDF type
-plot(sig1.1, type = "o", ylim = c(0.1, 0.7), lty = 2, lwd = 2, xaxt = "n", main = TeX("$\\sigma$"), pch = 2, las = 1, cex = 1.5, cex.main = 1.5, ylab = "", xlab = "")
-lines(sig1.2, type = "o", lty = 2, lwd = 2, pch = 1, cex = 1.5)
-lines(sig2.1, type = "o", lty = 1, lwd = 2, pch = 17, cex = 1.5)
-lines(sig2.2, type = "o", lty = 1, lwd = 2, pch = 16, cex = 1.5)
-abline(h = sigf, col = "grey", lwd = 2)
-axis(side = 1, at = (1:n.dates)[lab.days], labels = dates[lab.days], las = 1)
+par(mar = c(0.3,3.1,1,0.5))
+plot(like_sig[,1], type = "o", pch = 17, ylim = c(0, 0.4), axes = F, ann = F, cex = pt.cex)
 usr = par("usr"); xdiff = diff(usr[1:2]); ydiff = diff(usr[3:4])
-text(x = usr[1] + xdiff * 0.05, y = usr[4] - ydiff * 0.03, "(c)", font = 2, cex = 1.5)
+text(x = usr[2] + xdiff * 0.02, y = usr[4] - ydiff * 0.05, labels = "(c)", font = 2, pos = 2, cex = 1.1)
+text(x = usr[2] + xdiff * 0.02, y = usr[4] - ydiff * 0.15, labels = TeX("$\\sigma$"), font = 2, pos = 2, cex = 1.5)
+lines(like_sig[,2], type = "o", pch = 2, lty = 2, cex = pt.cex)
+lines(post_sig[,1], type = "o", pch = 16, cex = pt.cex)
+lines(post_sig[,2], type = "o", pch = 1, lty = 2, cex = pt.cex)
+abline(h = prior_sig, col = "grey")
+axis(side = 1, at = 1:n_dates, labels = dates, las = 2)
+axis(side = 2, las = 2)
+box()
+
+par(mar = c(0.5,0.5,1,3.1))
+plot(like_cv[,1], type = "o", pch = 17, ylim = c(0, 0.4), axes = F, ann = F, cex = pt.cex)
+usr = par("usr"); xdiff = diff(usr[1:2]); ydiff = diff(usr[3:4])
+text(x = usr[2] + xdiff * 0.02, y = usr[4] - ydiff * 0.05, labels = "(d)", font = 2, pos = 2, cex = 1.1)
+text(x = usr[2] + xdiff * 0.02, y = usr[4] - ydiff * 0.15, labels = "PDF CV", font = 2, pos = 2, cex = 1.1)
+lines(like_cv[,2], type = "o", pch = 2, lty = 2, cex = pt.cex)
+lines(post_cv[,1], type = "o", pch = 16, cex = pt.cex)
+lines(post_cv[,2], type = "o", pch = 1, lty = 2, cex = pt.cex)
+abline(h = prior_cv, col = "grey")
+axis(side = 1, at = 1:n_dates, labels = dates, las = 2)
+axis(side = 4, las = 2)
+box()
+
+mtext(side = 1, line = 2.5, "Date", outer = T)
 dev.off()
+
+#### FIGURE 5: EACH YEAR ERROR #####
 
 ##### COVERAGE TABLE #####
 lwrCL = rev(c("2.5%", "10%", "25%"))
