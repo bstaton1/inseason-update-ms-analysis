@@ -93,8 +93,8 @@ dates = c("6/10", "6/17", "6/24", "7/1", "7/8", "7/15")
 n_dates = length(dates)
 
 ##### PART 3: LEAVE ONE OUT ANALYSIS #####
-rt_types = c("null", "fcst")
-n_models = 2
+models = c("null", "fcst")
+n_models = length(models)
 n_stat = 9
 like_summ = post_summ = array(NA, dim = c(n_dates, n_stat, n_years, n_models))
 prior_summ = matrix(NA, n_years, n_stat)
@@ -120,7 +120,8 @@ for (y in 1:n_years) {
     fit_data = prepare_fit_data(dt = dates[d], yr = years[y], loo = T)
     
     # fit the regression model to all historical data (except the one left out)
-    fit = lm(log(N) ~ q * ccpue + d50, data = fit_data)
+    fit_null = lm(log(N) ~ q * ccpue, data = fit_data)
+    fit_fcst = lm(log(N) ~ q * ccpue + d50, data = fit_data)
 
     for (m in 1:n_models) {
       cat("    Model ", m, "\n", sep = "")
@@ -128,11 +129,15 @@ for (y in 1:n_years) {
       # get the data for prediction from the regression model
       pred_data = prepare_predict_data(fit_data = fit_data, dt = dates[d], 
                                        yr = years[y], n_mc = n_mc,
-                                       rt_type = rt_types[m])
+                                       rt_type = models[m])
       
       # sample the likelihood
       cat("      Likelihood Sampling...")
-      like_samps = sample_likelihood(fit = fit, pred_data = pred_data)
+      if (models[m] == "null") {
+        like_samps = sample_likelihood_null(fit = fit_null, pred_data = pred_data)
+      } else {
+        like_samps = sample_likelihood_fcst(fit = fit_fcst, pred_data = pred_data)
+      }
       like_fun = approxfun(density(like_samps, from = 0, to = dens_max), yleft = 0, yright = 0)
       cat("Done\n")
       
@@ -153,7 +158,7 @@ for (y in 1:n_years) {
       
       # create diagnostic plots; they get dumped in a PDF file placed in /Output directory
       diag.plots(list(chain1$post.samp, chain2$post.samp),
-                 paste(dates[d], years[y], rt_types[m], sep = "/"))
+                 paste(dates[d], years[y], models[m], sep = "/"))
       
       # summarize posterior and likelihood inference
       post_summ[d,,y,m] = summ(c(chain1$post.samp, chain2$post.samp))
@@ -170,7 +175,7 @@ dev.off()
 stop = Sys.time()
 
 dimnames(like_summ) = dimnames(post_summ) = 
-  list(dates, names(summ(rnorm(10))), years, rt_types)
+  list(dates, names(summ(rnorm(10))), years, models)
 dimnames(prior_summ) = list(years, names(summ(rnorm(10))))
 
 save(like_summ, file = "Output/like_summ")

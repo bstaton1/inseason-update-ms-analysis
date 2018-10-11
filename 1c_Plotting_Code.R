@@ -116,7 +116,7 @@ rt_ests = read.table("2c_Run Timing_Data.txt", stringsAsFactors = F, header = T)
 
 dates_eval = c("6/10", "6/24", "7/15")
 lets = c("(a)", "(b)", "(c)")
-d = 3
+d = 2
 
 jpeg(paste(out_dir, "Figure3.jpg", sep = "/"), h = 5 * ppi, w = 3 * ppi, res = ppi)
 par(mfrow = c(3,1), mar = c(0.75,2,1,1), oma = c(2.5,2,0,0), cex.lab = 1.2,
@@ -125,6 +125,7 @@ par(mfrow = c(3,1), mar = c(0.75,2,1,1), oma = c(2.5,2,0,0), cex.lab = 1.2,
 for (d in 1:length(dates_eval)) {
   fit_data = prepare_fit_data(dt = dates_eval[d], yr = 1995, loo = F)
   fit = lm(log(N) ~ q * ccpue + d50, data = fit_data)
+  fit_null = lm(log(N) ~ q * ccpue, data = fit_data)
   
   min_d50 = min(fit_data$d50)
   mean_d50 = mean(fit_data$d50)
@@ -313,28 +314,30 @@ myFunc = function(y, bottom, outer, legend) {
     p2 = calc_errors(post_summ[,"50%",y,2], true_N[y])$pe
     pr = calc_errors(prior_summ[y,"50%"], true_N[y])$pe
     
-    ymax = 0.9
+    ymax = 1.3
     plot(1,1,type = "n", ylim = ymax * c(-1,1), ann = F,
          xlim = c(0.5,n_dates + 0.5),xaxt = "n", yaxt = "n")
     usr = par("usr"); xdiff = diff(usr[1:2]); ydiff = diff(usr[1:2])
+    rect(usr[1], -0.25, usr[2], 0.25, col = "grey90", border = NA)
     lines(l1, type = "o", pch = 17, cex = 1.7)
     lines(l2, type = "o", pch = 2, lty = 2, cex = 1.7)
     lines(p1, type = "o", pch = 16, cex = 1.7)
     lines(p2, type = "o", pch = 1, lty = 2, cex = 1.7)
-    abline(h = pr, col = "grey", lwd = 2)
-    abline(h = 0, col = "black", lty = 3, lwd = 2)
+    abline(h = pr, col = "grey50", lwd = 2)
+    # abline(h = 0, col = "black", lty = 3, lwd = 2)
     
     text(x = usr[2] + xdiff * 0.01, y = usr[4] - ydiff * 0.03,
          labels = years[y], font = 2, pos = 2, cex = 1.5)
     
     if (outer) {
       axis(side = 2, las = 1,
-           at = round(seq(-0.9, 0.9, 0.3),1),
-           labels = round(seq(-0.9, 0.9, 0.3),1))
+           at = round(seq(-1.2, 1.2, 0.6),1),
+           labels = round(seq(-1.2, 1.2, 0.6),1))
     }
     if (bottom) {
       axis(side = 1, at = 1:6, labels = dates, las = 2)
     }
+    box()
   }
   
   if (legend) {

@@ -95,7 +95,39 @@ prepare_predict_data = function(fit_data, dt, yr, n_mc, rt_type, eiv = T) {
 }
 
 ##### SAMPLE THE LIKELIHOOD: DRAW SAMPLES FROM REGRESSION PREDICTIVE DIST #####
-sample_likelihood = function(fit, pred_data) {
+sample_likelihood_null = function(fit, pred_data) {
+  
+  # extract the mean coefficients in the model
+  coefs = coef(fit)
+  
+  # extract the covariance matrix on the coefficients
+  Sigma = vcov(fit)
+  
+  # extract the residual standard error
+  sigma = summary(fit)$sigma
+  
+  # the number of monte carlo draws
+  n_mc = ifelse(nrow(pred_data) > 1, nrow(pred_data), n_mc)
+  
+  # turn q to be binary
+  pred_data$q = ifelse(pred_data$q == 1, 0, 1) # turn to binary
+  
+  # create random coefficients
+  b_rand = rmvnorm(n = n_mc, mean = coefs, sigma = Sigma)
+  colnames(b_rand) = names(coefs)
+  
+  # create the log prediction
+  pred_log_N = 
+    b_rand[,"(Intercept)"] + 
+    b_rand[,"q2"] * pred_data$q +
+    b_rand[,"ccpue"] * pred_data$ccpue +
+    b_rand[,"q2:ccpue"] * pred_data$q * pred_data$ccpue
+  
+  # add residual error and bring to natural scale
+  exp(pred_log_N + rnorm(n_mc, -0.5 * sigma^2, sigma))
+}
+
+sample_likelihood_fcst = function(fit, pred_data) {
   
   # extract the mean coefficients in the model
   coefs = coef(fit)
