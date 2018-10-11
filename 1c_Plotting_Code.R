@@ -80,7 +80,36 @@ text(x = usr[2] - xdiff * 0.41, y = usr[4] - ydiff * 0.2, labels = TeX("$\\SD(\\
 box()
 dev.off()
 
-#### FIGURE 2: REGRESSION RELATIONSHIPS ####
+#### FIGURE 2: RUN TIMING FIGURE ####
+btf = read.table("2a_BTF_Data.txt", stringsAsFactors = F, header = T)
+true_N = read.table("2b_Total Run_Data.txt", stringsAsFactors = F, header = T)
+rt_ests = read.table("2c_Run Timing_Data.txt", stringsAsFactors = F, header = T)
+
+at.y = seq(156, 191, 5)
+lab_dates = btf$date[btf$year == 2017 & btf$doy %in% at.y]
+
+rt_ests = rt_ests[rt_ests$year >= 1995,]
+rt_ests$fcst_lwr = rt_ests$fcst_d50 - 1.96 * rt_ests$fcst_se_d50
+rt_ests$fcst_upr = rt_ests$fcst_d50 + 1.96 * rt_ests$fcst_se_d50
+
+jpeg("Output/Figure2.jpg", h = 3 * ppi, w = 3.4 * ppi, res = ppi)
+par(mar = c(2,3,0.5, 0.5))
+plot(d50 ~ year, data = rt_ests, type = "o", pch = 16, 
+     ylim = range(at.y),
+     yaxt = "n", xaxt = "n")
+lines(fcst_d50 ~ year, data = rt_ests, type = "o",
+      lty = 1, pch = 16, col = "grey")
+with(rt_ests, arrows(year, fcst_lwr, year, fcst_upr,
+                     length = 0, col = "grey"))
+axis(side = 2, at = at.y, labels = lab_dates, las = 1, tcl = -0.35, mgp = c(2,0.4,0), cex.axis = 0.8)
+mtext(side = 2, expression("Date of D"[50]), cex = 0.8, line = 2)
+axis(side = 1, at = seq(1995, 2015, 5), labels = seq(1995, 2015, 5), mgp = c(2,0.4,0), tcl = -0.35, cex.axis = 0.8)
+axis(side = 1, at = seq(1995, 2017, 1), labels = rep("", nrow(rt_ests)),tcl = -0.35/2)
+legend("bottomleft", lty = 1, pch = 16, col = c("black", "grey"),
+       legend = c("Observed", "Forecast"), cex = 0.8, bty = "n", pt.cex = 1.05)
+dev.off()
+
+#### FIGURE 3: REGRESSION RELATIONSHIPS ####
 btf = read.table("2a_BTF_Data.txt", stringsAsFactors = F, header = T)
 true_N = read.table("2b_Total Run_Data.txt", stringsAsFactors = F, header = T)
 rt_ests = read.table("2c_Run Timing_Data.txt", stringsAsFactors = F, header = T)
@@ -89,7 +118,7 @@ dates_eval = c("6/10", "6/24", "7/15")
 lets = c("(a)", "(b)", "(c)")
 d = 3
 
-jpeg(paste(out_dir, "Figure2.jpg", sep = "/"), h = 5 * ppi, w = 3 * ppi, res = ppi)
+jpeg(paste(out_dir, "Figure3.jpg", sep = "/"), h = 5 * ppi, w = 3 * ppi, res = ppi)
 par(mfrow = c(3,1), mar = c(0.75,2,1,1), oma = c(2.5,2,0,0), cex.lab = 1.2,
     tcl = -0.35, mgp = c(2,0.5,0), yaxs = "i")
 
@@ -154,35 +183,6 @@ for (d in 1:length(dates_eval)) {
 mtext(side = 1, outer = T, "Cumulative CPE", line = 1, cex = 0.8)
 mtext(side = 2, outer = T, "Run Size (1,000s)", line = 0.5, cex = 0.8)
 dev.off()
-
-#### FIGURE 3: RUN TIMING FIGURE ####
-
-rt_ests = read.table("2c_Run Timing_Data.txt", header = T)
-
-at.y = seq(156, 191, 5)
-lab_dates = btf$date[btf$year == 2017 & btf$doy %in% at.y]
-
-rt_ests = rt_ests[rt_ests$year >= 1995,]
-rt_ests$fcst_lwr = rt_ests$fcst_d50 - 1.96 * rt_ests$fcst_se_d50
-rt_ests$fcst_upr = rt_ests$fcst_d50 + 1.96 * rt_ests$fcst_se_d50
-
-jpeg("Output/Figure3.jpg", h = 3 * ppi, w = 3.4 * ppi, res = ppi)
-par(mar = c(2,3,0.5, 0.5))
-plot(d50 ~ year, data = rt_ests, type = "o", pch = 16, 
-     ylim = range(at.y),
-     yaxt = "n", xaxt = "n")
-lines(fcst_d50 ~ year, data = rt_ests, type = "o",
-      lty = 1, pch = 16, col = "grey")
-with(rt_ests, arrows(year, fcst_lwr, year, fcst_upr,
-                     length = 0, col = "grey"))
-axis(side = 2, at = at.y, labels = lab_dates, las = 1, tcl = -0.35, mgp = c(2,0.4,0), cex.axis = 0.8)
-mtext(side = 2, expression("Date of D"[50]), cex = 0.8, line = 2)
-axis(side = 1, at = seq(1995, 2015, 5), labels = seq(1995, 2015, 5), mgp = c(2,0.4,0), tcl = -0.35, cex.axis = 0.8)
-axis(side = 1, at = seq(1995, 2017, 1), labels = rep("", nrow(rt_ests)),tcl = -0.35/2)
-legend("bottomleft", lty = 1, pch = 16, col = c("black", "grey"),
-       legend = c("Observed", "Forecast"), cex = 0.8, bty = "n", pt.cex = 1.05)
-dev.off()
-
 
 #### FIGURE 4: ERROR SUMMARIES #####
 load(file = "Output/prior_summ")
