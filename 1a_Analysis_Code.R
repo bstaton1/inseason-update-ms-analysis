@@ -2,36 +2,36 @@
 ## LEAVE-ONE-OUT EVALUATION OF IN-SEASON BAYESIAN RUN ABUNDANCE UPDATING ##
 ## ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: ##
 
-## ::::::::::::::::::::::: ##
-## ----------------------- ##
-## CODE BY: BEN STATON     ##
-## ----------------------- ##
-## LAST UPDATED: 7/31/2018 ##
-## ----------------------- ##
-## ::::::::::::::::::::::: ##
+## :::::::::::::::::::::::: ##
+## ------------------------ ##
+## CODE BY: BEN STATON      ##
+## ------------------------ ##
+## LAST UPDATED: 10/11/2018 ##
+## ------------------------ ##
+## :::::::::::::::::::::::: ##
 
 # this is the analysis presented in Staton and Catalano
  # "Bayesian information updating procedures for Pacific salmon run size indicators:
  # Evaluation in the presence and absence of auxiliary migration timing information"
 
-# running this whole script should take approximately 40 minutes
+# running this whole script should take approximately 20 minutes
 
-# method codes
-# 1 = with timing forecast
-# 2 = without timing forecast (null model)
+# model codes
+# null = without timing forecast (null model)
+# fcst = with timing forecast
 
-# automatically sets wd to this location
+# automatically sets working directory to this location
+# if you don't have rstudioapi installed, set it here manually
 setwd(dirname(rstudioapi::getSourceEditorContext()$path))
 
-library(mvtnorm)    # for drawing random regression coefficients from a bivariate normal dist
+library(mvtnorm)    # for drawing random regression coefficients from a multivariate normal dist
 library(coda)       # for MCMC diagnostics
 
 ##### PART 0: SESSION SET UP #####
+# clear the workspace
 rm(list = ls(all = T))
 
-starttime_all = Sys.time()
-
-# directory for output
+# directory for output: if it doesn't exist, create it
 out_dir = paste(getwd(), "Output", sep = "/")
 if(!dir.exists(out_dir)) dir.create(out_dir)
 
@@ -40,25 +40,14 @@ source("1b_Function_Code.R")
 
 ##### PART 1: DATA AQUISITION #####
 # get historical BTF data
-  # day: day of sampling (1 = June 1 always, last is 85 = 8/24 always)
-  # doy: day of year
-  # date: M/DD formated date
-  # year: year of sampling
-  # cpue: daily cpue value
-  # ccpue: cumulative cpue value
-  # p.ccpue: the fraction of EOS ccpue that was caught by each date
 btf = read.table("2a_BTF_Data.txt", stringsAsFactors = F, header = T)
 head(btf)
 
 # get observed total run
-# mean estimated total run as presented by Smith and Liller (2018)
 true_N = read.table("2b_Total Run_Data.txt", stringsAsFactors = F, header = T)
 head(true_N)
 
 # get historical and forecasted run timing values
-  # year: the year of the timing estimates
-  # d50: the doy of 50% of the run complete (observed)
-  # fcst_d50: the mean run timing forecast that year
 rt_ests = read.table("2c_Run Timing_Data.txt", stringsAsFactors = F, header = T)
 head(rt_ests)
 
