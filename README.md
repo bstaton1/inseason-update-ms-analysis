@@ -1,8 +1,8 @@
-## Materials for Staton and Catalano (201Y)
+## Supplementary Materials for Staton and Catalano
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1467684.svg)](https://doi.org/10.5281/zenodo.1467684)
 
-This repository stores the materials for the analysis presented in Staton and Catalano (201Y; insert DOI): _Bayesian information updating procedures for Pacific salmon run size indicators: Evaluation in the presence and absence of auxiliary migration timing information_.
+This repository stores the materials for the analysis presented in Staton and Catalano (DOI: 10.1139/cjfas-2018-0176): _Bayesian information updating procedures for Pacific salmon run size indicators: Evaluation in the presence and absence of auxiliary migration timing information_.
 
 ### Running this code
 
